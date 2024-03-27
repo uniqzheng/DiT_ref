@@ -77,7 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("--cfg-scale", type=float, default=4.0)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--ckpt", type=str, default=None,
+    parser.add_argument("--ckpt", type=str, default='/export/zhengqi/Diffusion-based-Vide-Codec/Project/DiT_ref/pretrained_models/DiT-XL-2-512x512.pt',
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     args = parser.parse_args()
     main(args)
