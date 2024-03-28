@@ -30,6 +30,7 @@ import os
 from models import DiT_models
 from diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
+os.environ['CUDA_VISIBLE_DEVICES']='3'
 
 
 #################################################################################
@@ -114,7 +115,11 @@ def main(args):
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
 
     # Setup DDP:
-    dist.init_process_group("nccl")
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '5678'
+
+    dist.init_process_group(backend='nccl', init_method='env://', rank = 0, world_size = 1)
+    # dist.init_process_group("nccl")
     assert args.global_batch_size % dist.get_world_size() == 0, f"Batch size must be divisible by world size."
     rank = dist.get_rank()
     device = rank % torch.cuda.device_count()
@@ -253,17 +258,17 @@ def main(args):
 if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-path", type=str, required=True)
+    parser.add_argument("--data-path", type=str, default='/export/zhengqi/Diffusion-based-Vide-Codec/Dataset/ffhq-dataset/ffhq_512_n100')
     parser.add_argument("--results-dir", type=str, default="results")
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
-    parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
+    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/2")
+    parser.add_argument("--image-size", type=int, choices=[256, 512], default=512)
     parser.add_argument("--num-classes", type=int, default=1000)
-    parser.add_argument("--epochs", type=int, default=1400)
-    parser.add_argument("--global-batch-size", type=int, default=256)
+    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--global-batch-size", type=int, default=20)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")  # Choice doesn't affect training
-    parser.add_argument("--num-workers", type=int, default=4)
-    parser.add_argument("--log-every", type=int, default=100)
-    parser.add_argument("--ckpt-every", type=int, default=50_000)
+    parser.add_argument("--num-workers", type=int, default=1)
+    parser.add_argument("--log-every", type=int, default=5)
+    parser.add_argument("--ckpt-every", type=int, default=20)
     args = parser.parse_args()
     main(args)
