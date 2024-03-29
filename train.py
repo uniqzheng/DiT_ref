@@ -200,15 +200,16 @@ def main(args):
     for epoch in range(args.epochs):
         sampler.set_epoch(epoch)
         logger.info(f"Beginning epoch {epoch}...")
-        for x, y in loader:
+        for x, y, top_noise in loader:
             x = x.to(device)
             y = y.to(device)
+            top_noise = top_noise.to(device)
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
             t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
             model_kwargs = dict(y=y)
-            loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
+            loss_dict = diffusion.training_losses(model, x, t, model_kwargs, top_noise)
             loss = loss_dict["loss"].mean()
             opt.zero_grad()
             loss.backward()
@@ -263,12 +264,12 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/2")
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=512)
     parser.add_argument("--num-classes", type=int, default=1000)
-    parser.add_argument("--epochs", type=int, default=100)
-    parser.add_argument("--global-batch-size", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=100000)
+    parser.add_argument("--global-batch-size", type=int, default=18)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")  # Choice doesn't affect training
     parser.add_argument("--num-workers", type=int, default=1)
     parser.add_argument("--log-every", type=int, default=5)
-    parser.add_argument("--ckpt-every", type=int, default=20)
+    parser.add_argument("--ckpt-every", type=int, default=1000)
     args = parser.parse_args()
     main(args)

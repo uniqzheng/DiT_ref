@@ -224,10 +224,23 @@ class GaussianDiffusion:
         if noise is None:
             noise = th.randn_like(x_start)
         assert noise.shape == x_start.shape
-        return (
-            _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
-            + _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
-        )
+
+        # for t == 999
+        top_return = _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
+
+        # for t != 999
+        nontop_return = _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start + _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
+        
+        mask = t != 999
+        mask = mask[:, None, None, None]
+        real_return = th.where(mask, nontop_return, top_return)
+
+        # return (
+        #     _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start
+        #     + _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
+        # )
+
+        return real_return
 
     def q_posterior_mean_variance(self, x_start, x_t, t):
         """
@@ -726,8 +739,14 @@ class GaussianDiffusion:
         """
         if model_kwargs is None:
             model_kwargs = {}
-        if noise is None:
-            noise = th.randn_like(x_start)
+        # if noise is None:
+        #     noise = th.randn_like(x_start)
+        
+        mask = t != 999
+        mask = mask[:, None, None, None]
+        random_noise = th.randn_like(x_start)
+        noise = th.where(mask, random_noise, noise) # right noise is top_noise as input, left noise is real noise at current timestep
+
         x_t = self.q_sample(x_start, t, noise=noise)
 
         terms = {}
