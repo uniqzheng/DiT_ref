@@ -16,7 +16,8 @@ from diffusers.models import AutoencoderKL
 from download import find_model
 from models import DiT_models
 import argparse
-
+import os
+os.environ['CUDA_VISIBLE_DEVICES']='2'
 
 def main(args):
     # Setup PyTorch:
@@ -44,10 +45,16 @@ def main(args):
     vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
 
     # Labels to condition the model with (feel free to change):
-    class_labels = [207, 360, 387, 974, 88, 979, 417, 279]
+    # class_labels = [207, 360, 387, 974, 88, 979, 417, 279]
+    class_labels = [0]
 
     # Create sampling noise:
     n = len(class_labels)
+
+    # prepare for top noise
+    random_seed = 3047
+    torch.manual_seed(random_seed)
+
     z = torch.randn(n, 4, latent_size, latent_size, device=device)
     y = torch.tensor(class_labels, device=device)
 
@@ -65,19 +72,19 @@ def main(args):
     samples = vae.decode(samples / 0.18215).sample
 
     # Save and display images:
-    save_image(samples, "sample.png", nrow=4, normalize=True, value_range=(-1, 1))
+    save_image(samples, "sample_one_t1000.png", nrow=4, normalize=True, value_range=(-1, 1))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
+    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/2")
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")
-    parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
+    parser.add_argument("--image-size", type=int, choices=[256, 512], default=512)
     parser.add_argument("--num-classes", type=int, default=1000)
     parser.add_argument("--cfg-scale", type=float, default=4.0)
-    parser.add_argument("--num-sampling-steps", type=int, default=250)
+    parser.add_argument("--num-sampling-steps", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--ckpt", type=str, default='/export/zhengqi/Diffusion-based-Vide-Codec/Project/DiT_ref/pretrained_models/DiT-XL-2-512x512.pt',
+    parser.add_argument("--ckpt", type=str, default='/export/zhengqi/Diffusion-based-Vide-Codec/Project/DiT_ref/results/035-DiT-S-2/checkpoints/0126000.pt',
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     args = parser.parse_args()
     main(args)
