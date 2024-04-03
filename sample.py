@@ -46,7 +46,9 @@ def main(args):
 
     # Labels to condition the model with (feel free to change):
     # class_labels = [207, 360, 387, 974, 88, 979, 417, 279]
-    class_labels = [0]
+    # class_labels = [0,0,0,0,0,0,0,0]
+    class_labels = [0,0,0,0]
+    # class_labels = [0]
 
     # Create sampling noise:
     n = len(class_labels)
@@ -54,8 +56,22 @@ def main(args):
     # prepare for top noise
     random_seed = 3047
     torch.manual_seed(random_seed)
+    
+    # tmp_noise = []
+    # for idx in range(33):
+    #     tmp = torch.randn((4, latent_size, latent_size)).to(device)
+    #     tmp_noise.append(tmp)
+    
+    # z = tmp_noise[1]
+    # z = z.unsqueeze(0)
+    # z = torch.randn(n, 4, latent_size, latent_size, device=device)
+    z1 = torch.randn((4, latent_size, latent_size)).to(device)
+    z2 = torch.randn((4, latent_size, latent_size)).to(device)
+    z3 = torch.randn((4, latent_size, latent_size)).to(device)
+    z4 = torch.randn((4, latent_size, latent_size)).to(device)
+    z = torch.stack((z1,z2,z3,z4), dim=0)
+    # z = z4.unsqueeze(0)
 
-    z = torch.randn(n, 4, latent_size, latent_size, device=device)
     y = torch.tensor(class_labels, device=device)
 
     # Setup classifier-free guidance:
@@ -72,7 +88,7 @@ def main(args):
     samples = vae.decode(samples / 0.18215).sample
 
     # Save and display images:
-    save_image(samples, "sample_one_t1000.png", nrow=4, normalize=True, value_range=(-1, 1))
+    save_image(samples, "sample_first4_t1000_onlymean.png", nrow=4, normalize=True, value_range=(-1, 1))
 
 
 if __name__ == "__main__":

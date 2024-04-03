@@ -225,13 +225,13 @@ class GaussianDiffusion:
             noise = th.randn_like(x_start)
         assert noise.shape == x_start.shape
 
-        # for t == 999
+        # for t == self.num_timesteps-1
         top_return = _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
 
-        # for t != 999
+        # for t != self.num_timesteps-1
         nontop_return = _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start + _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise
         
-        mask = t != 999
+        mask = t != (self.num_timesteps-1)
         mask = mask[:, None, None, None]
         real_return = th.where(mask, nontop_return, top_return)
 
@@ -497,7 +497,10 @@ class GaussianDiffusion:
             device = next(model.parameters()).device
         assert isinstance(shape, (tuple, list))
         if noise is not None:
-            img = noise
+            # img = noise
+            timestep_top = th.full((noise.shape[0],), self.num_timesteps-1)
+            timestep_top = timestep_top.to(device=noise.device)
+            img = _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, timestep_top, noise.shape) * noise
         else:
             img = th.randn(*shape, device=device)
         indices = list(range(self.num_timesteps))[::-1]
@@ -742,7 +745,7 @@ class GaussianDiffusion:
         # if noise is None:
         #     noise = th.randn_like(x_start)
         
-        mask = t != 999
+        mask = t != (self.num_timesteps-1)
         mask = mask[:, None, None, None]
         random_noise = th.randn_like(x_start)
         noise = th.where(mask, random_noise, noise) # right noise is top_noise as input, left noise is real noise at current timestep
@@ -796,10 +799,11 @@ class GaussianDiffusion:
             }[self.model_mean_type]
             assert model_output.shape == target.shape == x_start.shape
             terms["mse"] = mean_flat((target - model_output) ** 2)
-            if "vb" in terms:
-                terms["loss"] = terms["mse"] + terms["vb"]
-            else:
-                terms["loss"] = terms["mse"]
+            # if "vb" in terms:
+            #     terms["loss"] = terms["mse"] + terms["vb"]
+            # else:
+            #     terms["loss"] = terms["mse"]
+            terms["loss"] = terms["mse"]
         else:
             raise NotImplementedError(self.loss_type)
 

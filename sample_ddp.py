@@ -88,7 +88,7 @@ def main(args):
     model_string_name = args.model.replace("/", "-")
     ckpt_string_name = os.path.basename(args.ckpt).replace(".pt", "") if args.ckpt else "pretrained"
     folder_name = f"{model_string_name}-{ckpt_string_name}-size-{args.image_size}-vae-{args.vae}-" \
-                  f"cfg-{args.cfg_scale}-seed-{args.global_seed}"
+                  f"cfg-{args.cfg_scale}-seed-{args.global_seed}-timestep-{args.num_sampling_steps}"
     sample_folder_dir = f"{args.sample_dir}/{folder_name}"
     if rank == 0:
         os.makedirs(sample_folder_dir, exist_ok=True)
@@ -109,10 +109,18 @@ def main(args):
     pbar = range(iterations)
     pbar = tqdm(pbar) if rank == 0 else pbar
     total = 0
+
+    # prepare for top noise
+    random_seed = 3047
+    torch.manual_seed(random_seed)
+    # z = torch.randn((n, model.in_channels, latent_size, latent_size)).to(device)
+
     for _ in pbar:
         # Sample inputs:
-        z = torch.randn(n, model.in_channels, latent_size, latent_size, device=device)
-        y = torch.randint(0, args.num_classes, (n,), device=device)
+        # z = torch.randn(n, model.in_channels, latent_size, latent_size, device=device)
+        z = torch.randn((n, model.in_channels, latent_size, latent_size)).to(device)
+        # y = torch.randint(0, args.num_classes, (n,), device=device)
+        y = torch.tensor([0] * n, device=device)
 
         # Setup classifier-free guidance:
         if using_cfg:
@@ -152,19 +160,19 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
+    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/2")
     parser.add_argument("--vae",  type=str, choices=["ema", "mse"], default="ema")
     parser.add_argument("--sample-dir", type=str, default="samples")
     parser.add_argument("--per-proc-batch-size", type=int, default=4)
     parser.add_argument("--num-fid-samples", type=int, default=10)
-    parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
+    parser.add_argument("--image-size", type=int, choices=[256, 512], default=512)
     parser.add_argument("--num-classes", type=int, default=1000)
-    parser.add_argument("--cfg-scale",  type=float, default=1.5)
-    parser.add_argument("--num-sampling-steps", type=int, default=250)
+    parser.add_argument("--cfg-scale",  type=float, default=1)
+    parser.add_argument("--num-sampling-steps", type=int, default=1000)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--tf32", action=argparse.BooleanOptionalAction, default=True,
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
-    parser.add_argument("--ckpt", type=str, default='/export/zhengqi/Diffusion-based-Vide-Codec/Project/DiT_ref/pretrained_models/DiT-XL-2-512x512.pt',
+    parser.add_argument("--ckpt", type=str, default='/export/zhengqi/Diffusion-based-Vide-Codec/Project/DiT_ref/results/035-DiT-S-2/checkpoints/0126000.pt',
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     args = parser.parse_args()
     main(args)
