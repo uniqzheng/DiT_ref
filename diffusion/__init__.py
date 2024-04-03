@@ -11,11 +11,11 @@ def create_diffusion(
     timestep_respacing,
     noise_schedule="linear", 
     use_kl=False,
-    sigma_small=False,
+    sigma_small=True,
     predict_xstart=False,
-    learn_sigma=True,
+    learn_sigma=False,
     rescale_learned_sigmas=False,
-    diffusion_steps=1000
+    diffusion_steps=50
 ):
     betas = gd.get_named_beta_schedule(noise_schedule, diffusion_steps)
     if use_kl:

@@ -749,8 +749,9 @@ class GaussianDiffusion:
         mask = mask[:, None, None, None]
         random_noise = th.randn_like(x_start)
         noise = th.where(mask, random_noise, noise) # right noise is top_noise as input, left noise is real noise at current timestep
+                                                    # choose random_noise when mask == True, else noise when mask == False
 
-        x_t = self.q_sample(x_start, t, noise=noise)
+        x_t = self.q_sample(x_start, t, noise=noise) 
 
         terms = {}
 
