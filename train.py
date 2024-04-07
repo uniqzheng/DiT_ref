@@ -116,7 +116,7 @@ def main(args):
 
     # Setup DDP:
     os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '2134'
+    os.environ['MASTER_PORT'] = '1142'
 
     dist.init_process_group(backend='nccl', init_method='env://', rank = 0, world_size = 1)
     # dist.init_process_group("nccl")
@@ -207,7 +207,9 @@ def main(args):
             with torch.no_grad():
                 # Map input images to latent space + normalize latents:
                 x = vae.encode(x).latent_dist.sample().mul_(0.18215)
-            t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
+            # t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
+            t = np.random.randint(0, diffusion.num_timesteps)
+            t = torch.full((x.shape[0],), t, dtype=torch.int64, device=device)
             model_kwargs = dict(y=y)
             loss_dict = diffusion.training_losses(model, x, t, model_kwargs, top_noise)
             loss = loss_dict["loss"].mean()
@@ -259,16 +261,16 @@ def main(args):
 if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-path", type=str, default='/export/zhengqi/Diffusion-based-Vide-Codec/Dataset/ffhq-dataset/ffhq_512_n10')
+    parser.add_argument("--data-path", type=str, default='/home/zhengqi/Diffusion-based-Vide-Codec/Dataset/ffhq-dataset/ffhq_512_n100')
     parser.add_argument("--results-dir", type=str, default="results")
     parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-Q/2")
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=512)
     parser.add_argument("--num-classes", type=int, default=1000)
     parser.add_argument("--epochs", type=int, default=10000000)
-    parser.add_argument("--global-batch-size", type=int, default=10)
+    parser.add_argument("--global-batch-size", type=int, default=45)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")  # Choice doesn't affect training
-    parser.add_argument("--num-workers", type=int, default=1)
+    parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--log-every", type=int, default=5)
     parser.add_argument("--ckpt-every", type=int, default=1000)
     args = parser.parse_args()
