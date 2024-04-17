@@ -23,7 +23,7 @@ from PIL import Image
 import numpy as np
 import math
 import argparse
-
+os.environ['CUDA_VISIBLE_DEVICES']='1'
 
 def create_npz_from_sample_folder(sample_dir, num=50_000):
     """
@@ -52,7 +52,7 @@ def main(args):
 
     # Setup DDP:
     os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '5678'
+    os.environ['MASTER_PORT'] = '5679'
 
     dist.init_process_group(backend='nccl', init_method='env://', rank = 0, world_size = 1)
     # dist.init_process_group("nccl")
@@ -163,16 +163,16 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/2")
     parser.add_argument("--vae",  type=str, choices=["ema", "mse"], default="ema")
     parser.add_argument("--sample-dir", type=str, default="samples")
-    parser.add_argument("--per-proc-batch-size", type=int, default=4)
+    parser.add_argument("--per-proc-batch-size", type=int, default=2)
     parser.add_argument("--num-fid-samples", type=int, default=10)
     parser.add_argument("--image-size", type=int, choices=[256, 512], default=512)
     parser.add_argument("--num-classes", type=int, default=1000)
     parser.add_argument("--cfg-scale",  type=float, default=1)
-    parser.add_argument("--num-sampling-steps", type=int, default=1000)
+    parser.add_argument("--num-sampling-steps", type=int, default=50)
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--tf32", action=argparse.BooleanOptionalAction, default=True,
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
-    parser.add_argument("--ckpt", type=str, default='/export/zhengqi/Diffusion-based-Vide-Codec/Project/DiT_ref/results/035-DiT-S-2/checkpoints/0126000.pt',
+    parser.add_argument("--ckpt", type=str, default='/home/zhengqi/Diffusion-based-Vide-Codec/Project/DiT_ref/results/021-DiT-S-2/checkpoints/0047000.pt',
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
     args = parser.parse_args()
     main(args)
